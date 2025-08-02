@@ -1,0 +1,50 @@
+.hmi-container {
+  display: flex;
+  height: 100vh;
+  font-family: 'Arial', sans-serif;
+}
+
+.control-panel {
+  width: 300px;
+  background: #2c3e50;
+  color: white;
+  padding: 20px;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.visualization-area {
+  flex: 1;
+  background: #ecf0f1;
+}
+
+.data-card {
+  background: #34495e;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+}
+
+.progress-bar {
+  background: #7f8c8d;
+  height: 10px;
+  border-radius: 5px;
+  margin: 10px 0;
+}
+
+.progress-bar div {
+  background: #2ecc71;
+  height: 100%;
+  border-radius: 5px;
+}
+
+.action-button {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  width: 100%;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 20px;
+}

@@ -1,0 +1,11 @@
+/* App.css — style global simple et sécurisé */
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: Arial, sans-serif;
+  background-color: #f0f2f5; /* couleur neutre de fond */
+}
+
+/* Tu peux ajouter des classes globales ici plus tard si besoin */
