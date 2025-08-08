@@ -11,7 +11,7 @@ export default function Login() {
   const handleLogin = async () => {
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      navigate('/dashboard') // redirige si succès
+      navigate('/dashboard')
     } catch (error) {
       alert('Erreur : ' + error.message)
     }
@@ -24,6 +24,7 @@ export default function Login() {
       justifyContent: 'center',
       alignItems: 'center',
       fontFamily: 'Arial, sans-serif',
+      backgroundColor: '#f8f9fa'
     }}>
       <div style={{
         backgroundColor: 'white',
@@ -33,7 +34,38 @@ export default function Login() {
         width: '350px',
         textAlign: 'center'
       }}>
+        
         <h2 style={{ color: 'purple', marginBottom: '20px' }}>Connexion</h2>
+
+        {/* Logo + titre horizontal */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '20px',
+          gap: '10px'
+        }}>
+          {/* Joli logo batterie en SVG */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#28a745"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="1" y="6" width="18" height="12" rx="2" ry="2" />
+            <line x1="23" y1="13" x2="23" y2="11" />
+            <rect x="3" y="8" width="14" height="8" fill="#28a745" />
+          </svg>
+          <h3 style={{ fontSize: '18px', color: '#333', margin: 0 }}>
+            DIGITAL-TWIN-BATTERY
+          </h3>
+        </div>
+
         <input
           type="email"
           placeholder="Adresse e-mail"
