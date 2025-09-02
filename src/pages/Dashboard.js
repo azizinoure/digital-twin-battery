@@ -11,7 +11,7 @@ export default function Dashboard() {
   }
 
   const backgroundStyle = {
-    backgroundImage: "url('battery-bg.jpeg')", // image dans /public
+    backgroundImage: "url('battery-bg.jpeg')",
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
@@ -20,7 +20,7 @@ export default function Dashboard() {
     fontFamily: 'Arial, sans-serif',
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
   }
 
   return (
@@ -47,22 +47,32 @@ export default function Dashboard() {
           🚪 Déconnexion
         </button>
 
-        {/* Titre dans un cadre */}
-        <div style={{
-          border: '2px solid white',
-          borderRadius: '8px',
-          padding: '6px 12px',
-          backgroundColor: 'rgba(0,0,0,0.4)',
-          fontWeight: 'bold',
-          fontSize: '18px'
-        }}>
-          @DIGITAL-TWIN-BATTERY-2025
-        </div>
+        {/* espace équilibrant */}
+        <div style={{ width: '110px' }} />
 
-        <div style={{ width: '110px' }} /> {/* pour équilibrer */}
+        <div /> {/* vide */}
       </div>
 
-      {/* Bas de page - Boutons des interfaces */}
+      {/* Titre légèrement déplacé vers le haut */}
+      <div style={{
+        border: '2px solid white',
+        borderRadius: '8px',
+        padding: '8px 14px',
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        fontWeight: 'bold',
+        fontSize: '18px',
+        color: 'orange',
+        userSelect: 'none',
+        textAlign: 'center',
+        width: 'fit-content',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        marginBottom: '350px', // plus haut qu'avant
+      }}>
+        @DIGITAL-TWIN-BATTERY-2025
+      </div>
+
+      {/* Bas de page - Boutons */}
       <div style={{
         textAlign: 'center',
         padding: '20px',
@@ -99,6 +109,7 @@ const btnStyle = {
   cursor: 'pointer',
   fontWeight: 'bold'
 }
+
 
 
 

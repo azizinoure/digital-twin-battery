@@ -5,4 +5,4 @@ function BatteryModel() {
   return <primitive object={scene} scale={0.5} />;
 }
 
-export default BatteryModel;
+export default BatteryModel; 
