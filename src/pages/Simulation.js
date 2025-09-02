@@ -12,7 +12,7 @@ export default function Simulation() {
   const [vue, setVue] = useState('global'); // 'global', 'parTrajet', 'cumulTrajet'
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // ✅ Positions cumulées exactes
+  // ✅ Positions cumulées exactes pour cumulTrajet
   const positionsCumulees = [
     0, 581, 1111, 1409, 2186, 2739, 4038, 4860,
     5145, 5588, 5961, 8526, 11163, 17391, 18650, 19632
@@ -59,12 +59,16 @@ export default function Simulation() {
           return { ...m, time: m.time + cumulativeTime };
         });
 
-        // 🧮 Axe X cumulatif avec les positions exactes
+        // 🧮 CumulTrajet : alignement exact avec positionsCumulees
         const cumulTrajetData = [];
         trajetsArray.forEach((trajet, i) => {
-          const offset = positionsCumulees[i] ?? 0; // offset basé sur tableau
+          const startOffset = positionsCumulees[i]; // début exact
+          const firstTime = trajet.data[0].time_s; // premier point du trajet
           trajet.data.forEach(m => {
-            cumulTrajetData.push({ ...m, time: m.time_s + offset });
+            cumulTrajetData.push({
+              ...m,
+              time: startOffset + (m.time_s - firstTime)
+            });
           });
         });
 
@@ -85,7 +89,7 @@ export default function Simulation() {
   const tooltipLabelFormatter = (label, payload) => 
     payload?.[0]?.payload?.time ? `t=${payload[0].payload.time}s` : '';
 
-  // Choix des données
+  // Données affichées selon la vue
   let dataAffiche;
   if (vue === 'global') dataAffiche = mesures.global;
   else if (vue === 'parTrajet') 
@@ -104,7 +108,7 @@ export default function Simulation() {
         <button onClick={() => setVue('cumulTrajet')} disabled={vue==='cumulTrajet'} style={{ marginLeft: 10 }}>🧮 Axe X cumulé</button>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation par trajet */}
       {vue === 'parTrajet' && (
         <div style={{ marginBottom: 10 }}>
           <button onClick={() => setCurrentIndex((currentIndex-1+trajets.length)%trajets.length)}>◀️ Trajet précédent</button>
@@ -114,7 +118,7 @@ export default function Simulation() {
       )}
 
       {/* Graphiques */}
-      {[
+      {[ 
         { key: "hv_soc", title: "🔋 hv_soc", yLabel: "% SOC", ticks: [0,20,40,60,80,100], stroke: "#27ae60" },
         { key: "vehicle_speed", title: "🏎️ vehicle_speed (km/h)", yLabel: "km/h", ticks: [0,50,100,150,200,250], stroke: "#9c27b0" },
         { key: "hv_battery_voltage", title: "🔌 hv_battery_voltage (Volts)", yLabel: "V", stroke: "#9b59b6" },
@@ -127,7 +131,8 @@ export default function Simulation() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="time" type="number"
-                ticks={vue==='global' ? xTicksGlobal : (vue==='cumulTrajet' ? positionsCumulees : undefined)}
+                domain={vue==='cumulTrajet' ? [Math.min(...positionsCumulees), Math.max(...positionsCumulees)] : undefined}
+                ticks={vue==='cumulTrajet' ? positionsCumulees : (vue==='global' ? xTicksGlobal : undefined)}
                 label={{ value: "Temps (s)", position: "insideBottomRight", offset: -5 }} 
               />
               <YAxis 
@@ -151,7 +156,8 @@ export default function Simulation() {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               dataKey="time" type="number"
-              ticks={vue==='global' ? xTicksGlobal : (vue==='cumulTrajet' ? positionsCumulees : undefined)}
+              domain={vue==='cumulTrajet' ? [Math.min(...positionsCumulees), Math.max(...positionsCumulees)] : undefined}
+              ticks={vue==='cumulTrajet' ? positionsCumulees : (vue==='global' ? xTicksGlobal : undefined)}
               label={{ value: "Temps (s)", position: "insideBottomRight", offset: -5 }} 
             />
             <YAxis label={{ value: '°C', angle: -90, position: 'insideLeft' }} />
@@ -172,7 +178,8 @@ export default function Simulation() {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               dataKey="time" type="number"
-              ticks={vue==='global' ? xTicksGlobal : (vue==='cumulTrajet' ? positionsCumulees : undefined)}
+              domain={vue==='cumulTrajet' ? [Math.min(...positionsCumulees), Math.max(...positionsCumulees)] : undefined}
+              ticks={vue==='cumulTrajet' ? positionsCumulees : (vue==='global' ? xTicksGlobal : undefined)}
               label={{ value: "Temps (s)", position: "insideBottomRight", offset: -5 }} 
             />
             <YAxis label={{ value: 'kWh', angle: -90, position: 'insideLeft' }} />
@@ -186,6 +193,8 @@ export default function Simulation() {
     </div>
   );
 }
+
+
 
 
 
