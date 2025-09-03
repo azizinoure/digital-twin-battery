@@ -12,13 +12,12 @@ function Scene({ data }) {
   const gltf = useLoader(GLTFLoader, '/tesla_battery.glb');
   const modelRef = useRef();
   
-  // Références pour les capteurs avec différents noms possibles
+  // Références pour les capteurs
   const capteurRefs = {
     Cap_Temp: useRef(),
     Cap_Tension: useRef(),
     Cap_Courant: useRef(),
     Cap_SOC: useRef(),
-    // Noms alternatifs possibles
     Temperature: useRef(),
     Voltage: useRef(),
     Current: useRef(),
@@ -33,6 +32,9 @@ function Scene({ data }) {
     Cap_SOC: new THREE.Color('black'),
   });
 
+  // Stocker les matériaux originaux
+  const originalMaterials = useRef(new Map());
+
   useEffect(() => {
     if (!gltf.scene) return;
     
@@ -40,26 +42,29 @@ function Scene({ data }) {
     
     let foundSensors = 0;
     
-    // Parcourir tous les éléments du modèle
+    // Sauvegarder les matériaux originaux
+    gltf.scene.traverse((child) => {
+      if (child.isMesh && child.material) {
+        originalMaterials.current.set(child.uuid, child.material.clone());
+      }
+    });
+    
+    // Appliquer les modifications
     gltf.scene.traverse((child) => {
       if (child.isMesh) {
-        console.log("Mesh trouvé:", child.name);
-        
-        // Vérifier si c'est un capteur (avec différents noms possibles)
+        // Vérifier si c'est un capteur
         const isSensor = Object.keys(capteurRefs).some(sensorName => 
           child.name.includes(sensorName) || child.name.toLowerCase().includes(sensorName.toLowerCase())
         );
         
         if (isSensor) {
-          console.log("Capteur trouvé:", child.name);
-          
           // Trouver le nom du capteur correspondant
           const sensorType = Object.keys(capteurRefs).find(sensorName => 
             child.name.includes(sensorName) || child.name.toLowerCase().includes(sensorName.toLowerCase())
           );
           
           if (sensorType) {
-            // Créer un nouveau matériau pour le capteur avec la couleur noire par défaut
+            // Matériau pour les capteurs (noir par défaut)
             child.material = new THREE.MeshStandardMaterial({
               color: new THREE.Color('black'),
               metalness: 0.3,
@@ -72,12 +77,25 @@ function Scene({ data }) {
             foundSensors++;
           }
         } else {
-          // Pour les autres éléments, s'assurer qu'ils ont un matériau approprié
-          child.material = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(0.7, 0.7, 0.7),
-            metalness: 0.4,
-            roughness: 0.6,
-          });
+          // Pour la batterie et autres éléments, améliorer le matériau
+          const originalMaterial = originalMaterials.current.get(child.uuid);
+          if (originalMaterial) {
+            // Adapter le matériau pour un meilleur rendu
+            child.material = originalMaterial.clone();
+            
+            // Ajustements pour une meilleure visibilité
+            if (child.material.isMeshStandardMaterial) {
+              child.material.roughness = 0.6; // Surface moins brillante
+              child.material.metalness = 0.4; // Moins métallique
+              
+              // Si la couleur est trop sombre, l'éclaircir légèrement
+              if (child.material.color.r < 0.3 && 
+                  child.material.color.g < 0.3 && 
+                  child.material.color.b < 0.3) {
+                child.material.color = new THREE.Color(0.5, 0.5, 0.5);
+              }
+            }
+          }
         }
       }
     });
@@ -86,6 +104,7 @@ function Scene({ data }) {
     setMaterialsReady(true);
   }, [gltf]);
 
+  // Le reste du code reste inchangé...
   useEffect(() => {
     if (!data || !materialsReady) return;
     
@@ -157,14 +176,41 @@ function Scene({ data }) {
     }
   });
 
+  
   return (
     <>
-      <primitive ref={modelRef} object={gltf.scene} />
-      {/* Lumière supplémentaire pour s'assurer que le modèle est visible */}
-      <pointLight position={[0, 5, 5]} intensity={1.5} />
+      <primitive 
+        ref={modelRef} 
+        object={gltf.scene} 
+        position={[0, 0, 0]} 
+        rotation={[0, 0, 0]}
+      />
+      
+      {/* Éclairage amélioré */}
+      <ambientLight intensity={1.2} color="#ffffff" />
+      <directionalLight 
+        position={[5, 10, 7]} 
+        intensity={1.5} 
+        castShadow
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+      />
+      <directionalLight 
+        position={[-5, -10, -7]} 
+        intensity={0.5} 
+        color="#ccccff"
+      />
+      <hemisphereLight
+        skyColor="#ffffff"
+        groundColor="#888888"
+        intensity={0.6}
+      />
+      <pointLight position={[0, 5, 5]} intensity={0.8} distance={10} />
     </>
   );
 }
+// Le reste du code de la fonction Visualisation reste EXACTEMENT le même
+// que votre code original sans aucune modification...
 
 export default function Visualisation() {
   const [trajets, setTrajets] = useState([]);
