@@ -104,7 +104,7 @@ function Scene({ data }) {
     setMaterialsReady(true);
   }, [gltf]);
 
-  // Le reste du code reste inchangé...
+  // Mise à jour avec les seuils scientifiques
   useEffect(() => {
     if (!data || !materialsReady) return;
     
@@ -118,16 +118,20 @@ function Scene({ data }) {
       targetColors.current.Cap_Temp.set('black'); // Normal → noir
     }
     
-    // Capteur de tension
-    if (data.hv_battery_voltage <= 360) {
-      targetColors.current.Cap_Tension.set('orange'); // Tension faible → orange
+    // Capteur de tension (seuil scientifique: 285-445V)
+    if (data.hv_battery_voltage <= 285) {
+      targetColors.current.Cap_Tension.set('orange'); // Tension faible critique → orange
+    } else if (data.hv_battery_voltage >= 445) {
+      targetColors.current.Cap_Tension.set('red'); // Tension élevée critique → rouge
     } else {
       targetColors.current.Cap_Tension.set('black'); // Normal → noir
     }
     
-    // Capteur de courant
-    if (data.hv_battery_current <= -50) {
-      targetColors.current.Cap_Courant.set('blue'); // Courant faible → bleu
+    // Capteur de courant (seuils scientifiques: décharge 300A, régénération 150A)
+    if (data.hv_battery_current <= -300) {
+      targetColors.current.Cap_Courant.set('blue'); // Courant de décharge élevé → bleu
+    } else if (data.hv_battery_current >= 150) {
+      targetColors.current.Cap_Courant.set('purple'); // Courant de régénération élevé → violet
     } else {
       targetColors.current.Cap_Courant.set('black'); // Normal → noir
     }
@@ -157,9 +161,9 @@ function Scene({ data }) {
         if (name.includes('Temp')) {
           isAlert = data && (data.hv_temp_max >= 45 || data.hv_temp_min <= 5);
         } else if (name.includes('Tension') || name.includes('Voltage')) {
-          isAlert = data && data.hv_battery_voltage <= 360;
+          isAlert = data && (data.hv_battery_voltage <= 285 || data.hv_battery_voltage >= 445);
         } else if (name.includes('Courant') || name.includes('Current')) {
-          isAlert = data && data.hv_battery_current <= -50;
+          isAlert = data && (data.hv_battery_current <= -300 || data.hv_battery_current >= 150);
         } else if (name.includes('SOC')) {
           isAlert = data && (data.hv_soc <= 20 || data.hv_soc >= 80);
         }
@@ -209,8 +213,6 @@ function Scene({ data }) {
     </>
   );
 }
-// Le reste du code de la fonction Visualisation reste EXACTEMENT le même
-// que votre code original sans aucune modification...
 
 export default function Visualisation() {
   const [trajets, setTrajets] = useState([]);
@@ -219,7 +221,6 @@ export default function Visualisation() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showDemoControls, setShowDemoControls] = useState(false);
   const [demoData, setDemoData] = useState({
     hv_temp_max: 35,
     hv_temp_min: 25,
@@ -231,6 +232,11 @@ export default function Visualisation() {
     time_s: 0
   });
   const navigate = useNavigate();
+
+  // Nouveaux états pour la simulation automatique
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const playIntervalRef = useRef(null);
 
   useEffect(() => {
     const fetchTrajets = async () => {
@@ -281,11 +287,104 @@ export default function Visualisation() {
     fetchTrajets();
   }, []);
 
+  // Gestion de la lecture automatique
+  useEffect(() => {
+    if (isPlaying) {
+      playIntervalRef.current = setInterval(() => {
+        setCurrentTime(prevTime => {
+          const newTime = prevTime + 1;
+          
+          // Trouver le point de données correspondant au temps actuel
+          if (selectedTrajet !== null && trajets[selectedTrajet]) {
+            const selected = trajets[selectedTrajet];
+            if (selected.data && selected.data.length > 0) {
+              // Trouver le point de données le plus proche du temps actuel
+              const dataPoint = selected.data.find(point => 
+                point.time_s >= newTime
+              ) || selected.data[selected.data.length - 1];
+              
+              if (dataPoint) {
+                setData(dataPoint);
+                setSelectedDataPoint(selected.data.indexOf(dataPoint));
+              }
+              
+              // Si on atteint la fin des données, arrêter la lecture
+              if (newTime > selected.data[selected.data.length - 1].time_s) {
+                handleStop();
+                return newTime;
+              }
+            }
+          }
+          
+          return newTime;
+        });
+      }, 1000); // Mise à jour chaque seconde
+    } else {
+      if (playIntervalRef.current) {
+        clearInterval(playIntervalRef.current);
+        playIntervalRef.current = null;
+      }
+    }
+    
+    return () => {
+      if (playIntervalRef.current) {
+        clearInterval(playIntervalRef.current);
+      }
+    };
+  }, [isPlaying, selectedTrajet, trajets]);
+
+  const handlePlayPause = () => {
+    if (isPlaying) {
+      handleStop();
+    } else {
+      handlePlay();
+    }
+  };
+
+  const handlePlay = () => {
+    if (selectedTrajet === null || !trajets[selectedTrajet] || !trajets[selectedTrajet].data) {
+      setError('Aucun trajet sélectionné ou aucune donnée disponible');
+      return;
+    }
+    
+    setIsPlaying(true);
+    setError(null);
+  };
+
+  const handleStop = () => {
+    setIsPlaying(false);
+  };
+
+  const handleReset = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+    
+    if (selectedTrajet !== null && trajets[selectedTrajet]) {
+      const selected = trajets[selectedTrajet];
+      if (selected.data && selected.data.length > 0) {
+        setData(selected.data[0]);
+        setSelectedDataPoint(0);
+      }
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const handleTrajetChange = (trajetIndex) => {
+    // Arrêter la lecture si elle est en cours
+    if (isPlaying) {
+      handleStop();
+    }
+    
     const selected = trajets[trajetIndex];
     if (selected) {
       setSelectedTrajet(trajetIndex);
       setSelectedDataPoint(0);
+      setCurrentTime(0);
       
       if (selected.data && selected.data.length > 0) {
         setData(selected.data[0]);
@@ -294,7 +393,6 @@ export default function Visualisation() {
         setData({...demoData});
         setError('Aucune donnée pour ce trajet');
       }
-      setShowDemoControls(false);
     }
   };
 
@@ -304,41 +402,16 @@ export default function Visualisation() {
       if (selected.data && index >= 0 && index < selected.data.length) {
         setSelectedDataPoint(index);
         setData(selected.data[index]);
-        setShowDemoControls(false);
+        setCurrentTime(selected.data[index].time_s || 0);
       }
     }
   };
 
-  const handleDemoDataChange = (field, value) => {
-    const numericValue = parseFloat(value);
-    const newDemoData = {
-      ...demoData,
-      [field]: isNaN(numericValue) ? demoData[field] : numericValue
-    };
-    setDemoData(newDemoData);
-    
-    if (showDemoControls) {
-      setData(newDemoData);
-    }
-  };
-
-  const useDemoData = () => {
-    setData({...demoData});
-    setError('Mode démonstration activé');
-    setShowDemoControls(true);
-    setSelectedTrajet(null);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate('/');
-    } catch (error) {
-      console.error('Erreur de déconnexion:', error);
-    }
-  };
-
   const handleBack = () => {
+    // Arrêter la lecture avant de quitter
+    if (isPlaying) {
+      handleStop();
+    }
     navigate('/dashboard');
   };
 
@@ -348,6 +421,7 @@ export default function Visualisation() {
   const currentTrajet = selectedTrajet !== null ? trajets[selectedTrajet] : null;
   const dataArray = currentTrajet?.data || [];
   const totalDataPoints = dataArray.length;
+  const totalDuration = dataArray.length > 0 ? dataArray[dataArray.length - 1].time_s : 0;
 
   return (
     <div style={{ height: '100vh', position: 'relative', background: '#1a1a1a' }}>
@@ -358,13 +432,32 @@ export default function Visualisation() {
         left: '15px',
         right: '15px',
         display: 'flex',
-        justifyContent: 'space-between',
-        zIndex: 10
+        justifyContent: 'flex-end',
+        zIndex: 10,
+        gap: '10px'
       }}>
+        {/* Bouton Play/Pause */}
         <button
-          onClick={handleLogout}
+          onClick={handlePlayPause}
           style={{
-            backgroundColor: '#dc3545',
+            backgroundColor: isPlaying ? '#dc3545' : '#28a745',
+            color: 'white',
+            border: 'none',
+            padding: '8px 15px',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            minWidth: '80px'
+          }}
+        >
+          {isPlaying ? '⏹️ Stop' : '▶️ Start'}
+        </button>
+
+        {/* Bouton Reset */}
+        <button
+          onClick={handleReset}
+          style={{
+            backgroundColor: '#6c757d',
             color: 'white',
             border: 'none',
             padding: '8px 15px',
@@ -373,8 +466,23 @@ export default function Visualisation() {
             fontWeight: 'bold'
           }}
         >
-          🚪 Déconnexion
+          🔄 Reset
         </button>
+
+        {/* Compteur de temps */}
+        <div style={{
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          color: 'white',
+          padding: '8px 15px',
+          borderRadius: '5px',
+          fontFamily: 'monospace',
+          fontSize: '18px',
+          fontWeight: 'bold',
+          minWidth: '100px',
+          textAlign: 'center'
+        }}>
+          {formatTime(currentTime)} / {formatTime(totalDuration)}
+        </div>
 
         <button
           onClick={handleBack}
@@ -433,69 +541,6 @@ export default function Visualisation() {
         <OrbitControls enableZoom={true} enablePan={true} enableRotate={true} />
       </Canvas>
 
-      {/* Bouton pour activer le mode démonstration */}
-      {!showDemoControls && (
-        <button
-          onClick={useDemoData}
-          style={{
-            position: 'absolute',
-            top: '70px',
-            right: '20px',
-            backgroundColor: '#28a745',
-            color: 'white',
-            border: 'none',
-            padding: '8px 15px',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            zIndex: 10
-          }}
-        >
-          🧪 Mode Démonstration
-        </button>
-      )}
-
-      {/* Contrôles de démonstration */}
-      {showDemoControls && (
-        <div style={{
-          position: 'absolute',
-          top: '70px',
-          right: '20px',
-          backgroundColor: 'rgba(0,0,0,0.7)',
-          padding: '15px',
-          borderRadius: '8px',
-          color: 'white',
-          zIndex: 10,
-          fontFamily: 'Arial, sans-serif',
-          minWidth: '300px'
-        }}>
-          <h4 style={{margin: '0 0 12px 0', borderBottom: '1px solid #444', paddingBottom: '5px'}}>
-            Contrôles Démonstration:
-          </h4>
-          
-          {Object.entries({
-            hv_temp_max: {label: 'Température max', min: 0, max: 60, unit: '°C'},
-            hv_temp_min: {label: 'Température min', min: 0, max: 60, unit: '°C'},
-            hv_battery_voltage: {label: 'Tension batterie', min: 300, max: 400, unit: 'V'},
-            hv_battery_current: {label: 'Courant batterie', min: -100, max: 0, unit: 'A'},
-            hv_soc: {label: 'SOC', min: 0, max: 100, unit: '%'}
-          }).map(([field, config]) => (
-            <div key={field} style={{marginBottom: '10px'}}>
-              <label>{config.label}: </label>
-              <input 
-                type="range" 
-                min={config.min} 
-                max={config.max} 
-                value={demoData[field]} 
-                onChange={(e) => handleDemoDataChange(field, e.target.value)}
-                style={{width: '100%'}}
-              />
-              <span> {demoData[field]}{config.unit}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Sélecteur de trajet */}
       {trajets.length > 0 && (
         <div style={{
@@ -528,16 +573,19 @@ export default function Visualisation() {
           >
             {trajets.map((trajet, index) => (
               <option key={index} value={index}>
-                Trajet {index + 1}
+                Trajet {index + 1} ({trajet.data?.length || 0} points)
               </option>
             ))}
           </select>
           
           {selectedTrajet !== null && totalDataPoints > 0 && (
             <div style={{marginTop: '10px'}}>
+              <div style={{marginBottom: '10px', fontSize: '14px'}}>
+                Durée totale: {formatTime(totalDuration)}
+              </div>
               <button 
                 onClick={() => handleDataPointChange(selectedDataPoint - 1)}
-                disabled={selectedDataPoint <= 0}
+                disabled={selectedDataPoint <= 0 || isPlaying}
                 style={{
                   padding: '5px 10px',
                   marginRight: '5px',
@@ -545,8 +593,8 @@ export default function Visualisation() {
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
-                  cursor: selectedDataPoint > 0 ? 'pointer' : 'not-allowed',
-                  opacity: selectedDataPoint > 0 ? 1 : 0.5
+                  cursor: selectedDataPoint > 0 && !isPlaying ? 'pointer' : 'not-allowed',
+                  opacity: selectedDataPoint > 0 && !isPlaying ? 1 : 0.5
                 }}
               >
                 ◀
@@ -556,15 +604,15 @@ export default function Visualisation() {
               </span>
               <button 
                 onClick={() => handleDataPointChange(selectedDataPoint + 1)}
-                disabled={selectedDataPoint >= totalDataPoints - 1}
+                disabled={selectedDataPoint >= totalDataPoints - 1 || isPlaying}
                 style={{
                   padding: '5px 10px',
                   backgroundColor: '#007bff',
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
-                  cursor: selectedDataPoint < totalDataPoints - 1 ? 'pointer' : 'not-allowed',
-                  opacity: selectedDataPoint < totalDataPoints - 1 ? 1 : 0.5
+                  cursor: selectedDataPoint < totalDataPoints - 1 && !isPlaying ? 'pointer' : 'not-allowed',
+                  opacity: selectedDataPoint < totalDataPoints - 1 && !isPlaying ? 1 : 0.5
                 }}
               >
                 ▶
@@ -574,8 +622,8 @@ export default function Visualisation() {
         </div>
       )}
 
-       {/* Légende des couleurs - MODIFIÉE selon les nouvelles spécifications */}
-       <div style={{
+      {/* Légende des couleurs */}
+      <div style={{
         position: 'absolute',
         bottom: '20px',
         left: '20px',
@@ -585,7 +633,7 @@ export default function Visualisation() {
         color: 'white',
         zIndex: 10,
         fontFamily: 'Arial, sans-serif',
-        maxWidth: '300px'
+        maxWidth: '350px'
       }}>
         <h4 style={{margin: '0 0 12px 0', borderBottom: '1px solid #444', paddingBottom: '5px'}}>Légende des capteurs:</h4>
         <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
@@ -599,11 +647,19 @@ export default function Visualisation() {
           </div>
           <div style={{display: 'flex', alignItems: 'center'}}>
             <div style={{width: '20px', height: '20px', backgroundColor: 'orange', marginRight: '10px', borderRadius: '3px'}}></div>
-            <span>Tension faible (≤360V)</span>
+            <span>Tension faible (≤285V)</span>
+          </div>
+          <div style={{display: 'flex', alignItems: 'center'}}>
+            <div style={{width: '20px', height: '20px', backgroundColor: 'red', marginRight: '10px', borderRadius: '3px'}}></div>
+            <span>Tension élevée (≥445V)</span>
           </div>
           <div style={{display: 'flex', alignItems: 'center'}}>
             <div style={{width: '20px', height: '20px', backgroundColor: 'blue', marginRight: '10px', borderRadius: '3px'}}></div>
-            <span>Courant faible (≤-50A)</span>
+            <span>Courant décharge élevé (≤-300A)</span>
+          </div>
+          <div style={{display: 'flex', alignItems: 'center'}}>
+            <div style={{width: '20px', height: '20px', backgroundColor: 'purple', marginRight: '10px', borderRadius: '3px'}}></div>
+            <span>Courant régénération élevé (≥150A)</span>
           </div>
           <div style={{display: 'flex', alignItems: 'center'}}>
             <div style={{width: '20px', height: '20px', backgroundColor: 'red', marginRight: '10px', borderRadius: '3px'}}></div>
@@ -615,7 +671,7 @@ export default function Visualisation() {
       {/* Indicateur de données en temps réel */}
       <div style={{
         position: 'absolute',
-        top: showDemoControls ? '400px' : '70px',
+        top: '70px',
         right: '20px',
         backgroundColor: 'rgba(0,0,0,0.7)',
         padding: '15px',
@@ -626,7 +682,7 @@ export default function Visualisation() {
         minWidth: '250px'
       }}>
         <h4 style={{margin: '0 0 12px 0', borderBottom: '1px solid #444', paddingBottom: '5px'}}>
-          {data && !error && selectedTrajet !== null ? `Données du trajet ${selectedTrajet + 1}:` : 'Données de démonstration:'}
+          {data && !error && selectedTrajet !== null ? `Données du trajet ${selectedTrajet + 1}:` : 'Données:'}
         </h4>
         <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
           <div style={{display: 'flex', justifyContent: 'space-between'}}>
@@ -650,7 +706,7 @@ export default function Visualisation() {
           <div style={{display: 'flex', justifyContent: 'space-between'}}>
             <span>Tension batterie:</span>
             <span style={{
-              color: displayData.hv_battery_voltage <= 360 ? 'orange' : 'green', 
+              color: displayData.hv_battery_voltage <= 285 ? 'orange' : (displayData.hv_battery_voltage >= 445 ? 'red' : 'green'), 
               fontWeight: 'bold'
             }}>
               {displayData.hv_battery_voltage}V
@@ -659,7 +715,7 @@ export default function Visualisation() {
           <div style={{display: 'flex', justifyContent: 'space-between'}}>
             <span>Courant batterie:</span>
             <span style={{
-              color: displayData.hv_battery_current <= -50 ? 'blue' : 'green', 
+              color: displayData.hv_battery_current <= -300 ? 'blue' : (displayData.hv_battery_current >= 150 ? 'purple' : 'green'), 
               fontWeight: 'bold'
             }}>
               {displayData.hv_battery_current}A
@@ -704,20 +760,6 @@ export default function Visualisation() {
           textAlign: 'center'
         }}>
           <div>{error}</div>
-          <button 
-            onClick={useDemoData}
-            style={{
-              marginTop: '10px',
-              padding: '8px 15px',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer'
-            }}
-          >
-            Utiliser les données de démonstration
-          </button>
         </div>
       )}
     </div>

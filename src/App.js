@@ -1,13 +1,13 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
-// ✅ Tous les imports commencent par ./pages/ pour rester dans src
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import Simulation from './pages/Simulation'
-import Statistiques from './pages/Statistiques'
-import Visualisation from './pages/Visualisation'
-import Historique from './pages/Historique'
-import Predictions from './pages/Predictions'
+// Import des composants de pages
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Simulation from './pages/Simulation';
+import Analyse from './pages/Analyse';
+import Visualisation from './pages/Visualisation';
+import Historique from './pages/Historique';
+import Predictions from './pages/Predictions';
 
 function App() {
   return (
@@ -15,24 +15,24 @@ function App() {
       <Routes>
         {/* Page de login */}
         <Route path="/" element={<Login />} />
-
+        
         {/* Dashboard / page principale */}
         <Route path="/dashboard" element={<Dashboard />} />
-
+        
         {/* Simulation dynamique par trajet */}
         <Route path="/simulation" element={<Simulation />} />
-
+        
         {/* Autres pages */}
-        <Route path="/statistiques" element={<Statistiques />} />
+        <Route path="/analyse" element={<Analyse />} />
         <Route path="/visualisation" element={<Visualisation />} />
         <Route path="/historique" element={<Historique />} />
         <Route path="/predictions" element={<Predictions />} />
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;
 
 
  

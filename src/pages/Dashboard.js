@@ -53,24 +53,25 @@ export default function Dashboard() {
         <div /> {/* vide */}
       </div>
 
-      {/* Titre légèrement déplacé vers le haut */}
-      <div style={{
-        border: '2px solid white',
-        borderRadius: '8px',
-        padding: '8px 14px',
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        fontWeight: 'bold',
-        fontSize: '18px',
-        color: 'orange',
-        userSelect: 'none',
-        textAlign: 'center',
-        width: 'fit-content',
-        marginLeft: 'auto',
-        marginRight: 'auto',
-        marginBottom: '350px', // plus haut qu'avant
-      }}>
-        @DIGITAL-TWIN-BATTERY-2025
-      </div>
+     {/* Titre en haut à droite */}
+<div style={{
+  position: 'absolute',   // permet de fixer la position
+  top: '20px',            // distance du haut
+  right: '20px',          // distance de la droite
+  border: '2px solid white',
+  borderRadius: '8px',
+  padding: '8px 14px',
+  backgroundColor: 'rgba(0,0,0,0.4)',
+  fontWeight: 'bold',
+  fontSize: '18px',
+  color: 'red',
+  userSelect: 'none',
+  textAlign: 'center',
+  width: 'fit-content',
+}}>
+  @DIGITAL-TWIN-BATTERY-2025
+</div>
+
 
       {/* Bas de page - Boutons */}
       <div style={{
@@ -87,8 +88,8 @@ export default function Dashboard() {
         <button onClick={() => navigate('/historique')} style={btnStyle}>
           📊 HISTORIQUE
         </button>
-        <button onClick={() => navigate('/statistiques')} style={btnStyle}>
-          📈 ANALYSE STATISTIQUE
+        <button onClick={() => navigate('/analyse')} style={btnStyle}>
+          📈 ANALYSE
         </button>
         <button onClick={() => navigate('/predictions')} style={btnStyle}>
           📉 PRÉDICTION
