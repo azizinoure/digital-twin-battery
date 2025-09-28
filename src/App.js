@@ -1,13 +1,16 @@
+
+
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 // Import des composants de pages
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Simulation from './pages/Simulation';
-import Analyse from './pages/Analyse';
+import Diagnostic from './pages/Diagnostic';   // <- nouveau nom
 import Visualisation from './pages/Visualisation';
 import Historique from './pages/Historique';
-import Predictions from './pages/Predictions';
+// import Predictions from './pages/Predictions'; // <- supprimé
+console.log("⚡ Nouveau App.js chargé !");
 
 function App() {
   return (
@@ -23,10 +26,10 @@ function App() {
         <Route path="/simulation" element={<Simulation />} />
         
         {/* Autres pages */}
-        <Route path="/analyse" element={<Analyse />} />
+        <Route path="/diagnostic" element={<Diagnostic />} />   {/* renommé */}
         <Route path="/visualisation" element={<Visualisation />} />
         <Route path="/historique" element={<Historique />} />
-        <Route path="/predictions" element={<Predictions />} />
+        {/* <Route path="/predictions" element={<Predictions />} /> */} {/* supprimé */}
       </Routes>
     </BrowserRouter>
   );

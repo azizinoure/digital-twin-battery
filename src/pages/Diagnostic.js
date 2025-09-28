@@ -13,6 +13,7 @@ import {
 import "./AnalyseModern.css";
 
 export default function AnalyseModern() {
+ console.log("Composant Diagnostic monté !"); // ← Ajoutez cette ligne
   const [realData, setRealData] = useState([]);
   const [twinData, setTwinData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
